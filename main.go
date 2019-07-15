@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/toyocy/zbx/commands"
 	"github.com/urfave/cli"
 )
 
@@ -13,21 +14,17 @@ type subCmd interface {
 	Run(*cli.Context) error
 }
 
-var cmdList = []cli.Command{}
-
 func main() {
 	app := cli.NewApp()
 	app.Name = "zbx"
 	app.Version = version
 	app.Usage = "Command Line Interface for Zabbix Server"
 
-	app.Commands = cmdList
+	app.Commands = []cli.Command{
+		commands.Login(),
+	}
 
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func action(c *cli.Context, sub subCmd) error {
-	return sub.Run(c)
 }

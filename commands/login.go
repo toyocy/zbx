@@ -1,4 +1,4 @@
-package main
+package commands
 
 import (
 	"bytes"
@@ -11,27 +11,31 @@ import (
 	"github.com/urfave/cli"
 )
 
-type Params struct {
+type params struct {
 	User     string `json:"user"`
 	Password string `json:"password"`
 }
 
-type Request struct {
+type request struct {
 	Jsonrpc string `json:"jsonrpc"`
 	Method  string `json:"method"`
-	Params  Params `json:"params"`
+	Params  params `json:"params"`
 	ID      int    `json:"id"`
 }
 
-type Result struct {
+type result struct {
 	Token string `json:"result"`
 }
 
-func CreateRequestString(c *cli.Context) []byte {
-	request := Request{
+type login struct {
+	Token string
+}
+
+func createRequestString(c *cli.Context) []byte {
+	request := request{
 		Jsonrpc: "2.0",
 		Method:  "user.login",
-		Params: Params{
+		Params: params{
 			User:     c.String("user"),
 			Password: c.String("password"),
 		},
@@ -46,7 +50,7 @@ func CreateRequestString(c *cli.Context) []byte {
 	return values
 }
 
-func GetAuthToken(request []byte, c *cli.Context) Result {
+func getAuthToken(request []byte, c *cli.Context) result {
 	url := "http://" + c.String("zabbix-url") + "/api_jsonrpc.php"
 	res, err := http.Post(url, "application/json-rpc", bytes.NewBuffer(request))
 	if err != nil {
@@ -60,7 +64,7 @@ func GetAuthToken(request []byte, c *cli.Context) Result {
 		log.Fatal(error)
 	}
 
-	var result Result
+	var result result
 	json.Unmarshal(body, &result)
 
 	if err != nil {
@@ -69,8 +73,8 @@ func GetAuthToken(request []byte, c *cli.Context) Result {
 	return result
 }
 
-func init() {
-	cmdList = append(cmdList, cli.Command{
+func Login() cli.Command {
+	return cli.Command{
 		Name:  "login",
 		Usage: "Sign In to Zabbix Server",
 		Flags: []cli.Flag{
@@ -91,18 +95,10 @@ func init() {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			request := CreateRequestString(c)
-			result := GetAuthToken(request, c)
-			return action(c, &login{Token: result.Token})
+			request := createRequestString(c)
+			result := getAuthToken(request, c)
+			fmt.Println(result.Token)
+			return nil
 		},
-	})
-}
-
-type login struct {
-	Token string
-}
-
-func (l *login) Run(c *cli.Context) error {
-	fmt.Println(l.Token)
-	return nil
+	}
 }
